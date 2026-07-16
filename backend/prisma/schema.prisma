@@ -35,5 +35,88 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
+  // Relations
+  expertProfile  ExpertProfile?
+  bookings       Booking[]      @relation("CustomerBookings")
+  expertBookings Booking[]      @relation("ExpertBookings")
+  notifications  Notification[]
+
   @@map("users")
+}
+
+model ExpertProfile {
+  id           String   @id
+  userId       String   @unique @map("user_id") @db.Uuid
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  bio          String
+  rating       Decimal? @default(5.0) @db.Decimal(3, 2)
+  reviewCount  Int?     @default(0) @map("review_count")
+  earnings     Decimal? @default(0.0) @db.Decimal(10, 2)
+  approved     Boolean  @default(false)
+  availability Json?    @default("[]")
+  services     String[] @default([])
+
+  @@map("expert_profiles")
+}
+
+model Service {
+  id          String    @id
+  title       String
+  description String
+  price       Decimal   @db.Decimal(10, 2)
+  category    String
+  duration    Int
+  imageUrl    String?   @map("image_url")
+  rating      Decimal?  @default(5.0) @db.Decimal(3, 2)
+  reviewCount Int?      @default(0) @map("review_count")
+  bookings    Booking[]
+
+  @@map("services")
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+model Booking {
+  id            String        @id
+  customerId    String        @map("customer_id") @db.Uuid
+  customerName  String        @map("customer_name")
+  customer      User          @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
+  expertId      String        @map("expert_id") @db.Uuid
+  expertName    String        @map("expert_name")
+  expert        User          @relation("ExpertBookings", fields: [expertId], references: [id], onDelete: Cascade)
+  serviceId     String        @map("service_id")
+  serviceTitle  String        @map("service_title")
+  service       Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  status        BookingStatus @default(pending)
+  price         Decimal       @db.Decimal(10, 2)
+  scheduledAt   DateTime      @map("scheduled_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  @@map("bookings")
+}
+
+enum NotificationType {
+  info
+  success
+  warning
+  error
+}
+
+model Notification {
+  id        String           @id
+  userId    String           @map("user_id") @db.Uuid
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      NotificationType @default(info)
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@map("notifications")
 }
