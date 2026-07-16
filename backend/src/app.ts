@@ -15,6 +15,7 @@ import NotificationController from './controllers/NotificationController';
 
 // Import Router Modules
 import authRouter from './modules/auth/routes';
+import userRouter from './modules/user/routes';
 
 dotenv.config();
 
@@ -41,8 +42,7 @@ app.use((req, res, next) => {
 app.use('/api/v1/auth', authRouter);
 
 // 2. User Profiles
-app.get('/api/v1/users/profile', authMiddleware, UserController.getProfile);
-app.put('/api/v1/users/update', authMiddleware, UserController.updateProfile);
+app.use('/api/v1/users', userRouter);
 
 // 3. Expert Domain Profiles
 app.get('/api/v1/experts', ExpertController.getExpertsList);
