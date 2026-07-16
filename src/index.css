@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+  --color-brand-950: #2e1065;
+
+  --color-expert-50: #ecfdf5;
+  --color-expert-100: #d1fae5;
+  --color-expert-500: #10b981;
+  --color-expert-600: #059669;
+  --color-expert-700: #047857;
+
+  --color-admin-50: #eff6ff;
+  --color-admin-100: #dbeafe;
+  --color-admin-500: #3b82f6;
+  --color-admin-600: #2563eb;
+  --color-admin-700: #1d4ed8;
+
+  --color-dark-bg: #09090b;
+  --color-dark-card: #18181b;
+  --color-dark-border: #27272a;
+  --color-dark-text-primary: #f4f4f5;
+  --color-dark-text-secondary: #a1a1aa;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e4e4e7;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+/* Custom Utilities for Premium Glassmorphic Design */
+@utility glass {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@utility dark-glass {
+  background: rgba(24, 24, 27, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@utility text-glow {
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+@utility card-glow-brand {
+  box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.15);
+}
+
+@utility card-glow-expert {
+  box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.15);
+}
+
+@utility card-glow-admin {
+  box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.15);
+}
+
+/* Smooth Transitions & Base Layout Settings */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 transition-colors duration-300;
+}
+
+body.dark {
+  @apply bg-[#09090b] text-slate-100;
+}
+
+/* Shimmer Animation for Skeletons */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(228, 228, 231, 0.1) 25%,
+    rgba(228, 228, 231, 0.3) 37%,
+    rgba(228, 228, 231, 0.1) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(39, 39, 42, 0.1) 25%,
+    rgba(39, 39, 42, 0.3) 37%,
+    rgba(39, 39, 42, 0.1) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
