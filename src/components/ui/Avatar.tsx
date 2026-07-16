@@ -2,25 +2,26 @@ import React, { useState } from 'react';
 
 interface AvatarProps {
   src?: string;
-  name: string;
+  name?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
 export const Avatar: React.FC<AvatarProps> = ({
   src,
-  name,
+  name = '',
   size = 'md',
   className = '',
 }) => {
   const [error, setError] = useState(false);
 
   const getInitials = (fullName: string) => {
-    const parts = fullName.trim().split(' ');
-    if (parts.length >= 2) {
+    const safeName = fullName || '';
+    const parts = safeName.trim().split(' ');
+    if (parts.length >= 2 && parts[0] && parts[1]) {
       return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     }
-    return fullName.substring(0, 2).toUpperCase();
+    return safeName.substring(0, 2).toUpperCase();
   };
 
   const sizes = {

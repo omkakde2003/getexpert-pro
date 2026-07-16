@@ -42,7 +42,10 @@ export const AuthService = {
 
     const { password: _, ...userProfile } = user;
     return {
-      user: userProfile,
+      user: {
+        ...userProfile,
+        name: `${user.firstName} ${user.lastName}`.trim(),
+      },
       token,
       refreshToken,
     };
@@ -73,7 +76,10 @@ export const AuthService = {
 
     const { password: _, ...userProfile } = user;
     return {
-      user: userProfile,
+      user: {
+        ...userProfile,
+        name: `${user.firstName} ${user.lastName}`.trim(),
+      },
       token,
       refreshToken,
     };
@@ -114,7 +120,10 @@ export const AuthService = {
       throw new Error('User not found');
     }
     const { password: _, ...userProfile } = user;
-    return userProfile;
+    return {
+      ...userProfile,
+      name: `${user.firstName} ${user.lastName}`.trim(),
+    };
   },
 };
 

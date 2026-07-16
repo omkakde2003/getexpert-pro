@@ -6,8 +6,11 @@ export const UserService = {
     if (!user) {
       throw new Error('User profile not found');
     }
-    const { password: _, ...profile } = user;
-    return profile;
+    const { password: _, ...userProfile } = user;
+    return {
+      ...userProfile,
+      name: `${user.firstName} ${user.lastName}`.trim(),
+    };
   },
 
   updateProfile: async (id: string, updates: UpdateUserData) => {
@@ -15,8 +18,11 @@ export const UserService = {
     if (!user) {
       throw new Error('User profile not found');
     }
-    const { password: _, ...profile } = user;
-    return profile;
+    const { password: _, ...userProfile } = user;
+    return {
+      ...userProfile,
+      name: `${user.firstName} ${user.lastName}`.trim(),
+    };
   },
 };
 
