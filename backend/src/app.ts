@@ -13,6 +13,9 @@ import BookingController from './controllers/BookingController';
 import ServiceController from './controllers/ServiceController';
 import NotificationController from './controllers/NotificationController';
 
+// Import Router Modules
+import authRouter from './modules/auth/routes';
+
 dotenv.config();
 
 const app = express();
@@ -35,9 +38,7 @@ app.use((req, res, next) => {
 // --- API ROUTES MAP (v1) ---
 
 // 1. Authentication Portal
-app.post('/api/v1/auth/login', AuthController.login);
-app.post('/api/v1/auth/register', AuthController.register);
-app.post('/api/v1/auth/refresh', AuthController.refresh);
+app.use('/api/v1/auth', authRouter);
 
 // 2. User Profiles
 app.get('/api/v1/users/profile', authMiddleware, UserController.getProfile);

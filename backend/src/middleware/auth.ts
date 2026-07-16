@@ -7,7 +7,7 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
-    role: 'customer' | 'expert' | 'admin';
+    role: 'customer' | 'expert' | 'admin' | 'CUSTOMER' | 'EXPERT' | 'ADMIN';
   };
 }
 
@@ -47,13 +47,17 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
   }
 };
 
-export const roleMiddleware = (allowedRoles: ('customer' | 'expert' | 'admin')[]) => {
+export const roleMiddleware = (allowedRoles: ('customer' | 'expert' | 'admin' | 'CUSTOMER' | 'EXPERT' | 'ADMIN')[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    const hasRole = allowedRoles.some(
+      (role) => role.toLowerCase() === req.user?.role.toLowerCase()
+    );
+
+    if (!hasRole) {
       return res.status(403).json({ success: false, message: 'Access denied: insufficient permissions' });
     }
 

@@ -10,6 +10,14 @@ const PGUSER = process.env.PGUSER || 'postgres';
 const PGPASSWORD = process.env.PGPASSWORD || 'postgres';
 const PGDATABASE = process.env.PGDATABASE || 'getexpert_pro';
 
+// Hardcoded UUIDs to preserve seeding relations
+const uSarah = 'c1000000-0000-0000-0000-000000000001';
+const uJohn = 'c2000000-0000-0000-0000-000000000002';
+const uAlex = 'e1000000-0000-0000-0000-000000000001';
+const uElena = 'e2000000-0000-0000-0000-000000000002';
+const uMarcus = 'e3000000-0000-0000-0000-000000000003';
+const uAdmin = 'a1000000-0000-0000-0000-000000000001';
+
 async function initDatabase() {
   console.log('Connecting to postgres default database to check target...');
   
@@ -53,19 +61,38 @@ async function initDatabase() {
     // Enable uuid-ossp extension
     await pool.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
+    console.log('Creating custom enums for Prisma matching...');
+    // Create Role and UserStatus enums in PostgreSQL
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'Role') THEN
+          CREATE TYPE "Role" AS ENUM ('CUSTOMER', 'EXPERT', 'ADMIN');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'UserStatus') THEN
+          CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED');
+        END IF;
+      END
+      $$;
+    `);
+
     console.log('Creating tables...');
     
-    // Create Users table
+    // Create Users table matching Prisma schema
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id VARCHAR(50) PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "firstName" VARCHAR(100) NOT NULL,
+        "lastName" VARCHAR(100) NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
-        role VARCHAR(20) NOT NULL CHECK (role IN ('customer', 'expert', 'admin')),
-        avatar_url VARCHAR(255),
-        status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'pending')),
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        phone VARCHAR(50),
+        password VARCHAR(255) NOT NULL,
+        role "Role" NOT NULL DEFAULT 'CUSTOMER',
+        "profileImage" VARCHAR(255),
+        "isVerified" BOOLEAN DEFAULT FALSE,
+        status "UserStatus" NOT NULL DEFAULT 'ACTIVE',
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -73,7 +100,7 @@ async function initDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS expert_profiles (
         id VARCHAR(50) PRIMARY KEY,
-        user_id VARCHAR(50) UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
         title VARCHAR(150) NOT NULL,
         bio TEXT NOT NULL,
         rating NUMERIC(3, 2) DEFAULT 5.0,
@@ -104,9 +131,9 @@ async function initDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS bookings (
         id VARCHAR(50) PRIMARY KEY,
-        customer_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+        customer_id UUID REFERENCES users(id) ON DELETE CASCADE,
         customer_name VARCHAR(100) NOT NULL,
-        expert_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+        expert_id UUID REFERENCES users(id) ON DELETE CASCADE,
         expert_name VARCHAR(100) NOT NULL,
         service_id VARCHAR(50) REFERENCES services(id) ON DELETE CASCADE,
         service_title VARCHAR(150) NOT NULL,
@@ -121,7 +148,7 @@ async function initDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS notifications (
         id VARCHAR(50) PRIMARY KEY,
-        user_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         title VARCHAR(150) NOT NULL,
         message TEXT NOT NULL,
         type VARCHAR(20) NOT NULL CHECK (type IN ('info', 'success', 'warning', 'error')),
@@ -135,7 +162,7 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS messages (
         id VARCHAR(50) PRIMARY KEY,
         conversation_id VARCHAR(50) NOT NULL,
-        sender_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+        sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
         sender_name VARCHAR(100) NOT NULL,
         sender_role VARCHAR(20) NOT NULL,
         content TEXT NOT NULL,
@@ -159,14 +186,21 @@ async function initDatabase() {
 
       // Seed Users
       await pool.query(`
-        INSERT INTO users (id, name, email, password_hash, role, avatar_url, status) VALUES
-        ('c1', 'Sarah Connor', 'sarah@getexpert.pro', $1, 'customer', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', 'active'),
-        ('c2', 'John Doe', 'john@getexpert.pro', $2, 'customer', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', 'active'),
-        ('e1', 'Alex Rivera', 'alex@getexpert.pro', $3, 'expert', 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150', 'active'),
-        ('e2', 'Elena Rostova', 'elena@getexpert.pro', $4, 'expert', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', 'active'),
-        ('e3', 'Marcus Chen', 'marcus@getexpert.pro', $5, 'expert', 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', 'active'),
-        ('a1', 'Chief Admin', 'admin@getexpert.pro', $6, 'admin', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', 'active')
-      `, [pwdSarah, pwdJohn, pwdAlex, pwdElena, pwdMarcus, pwdAdmin]);
+        INSERT INTO users (id, "firstName", "lastName", email, password, role, "profileImage", status) VALUES
+        ($1, 'Sarah', 'Connor', 'sarah@getexpert.pro', $2, 'CUSTOMER', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', 'ACTIVE'),
+        ($3, 'John', 'Doe', 'john@getexpert.pro', $4, 'CUSTOMER', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', 'ACTIVE'),
+        ($5, 'Alex', 'Rivera', 'alex@getexpert.pro', $6, 'EXPERT', 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150', 'ACTIVE'),
+        ($7, 'Elena', 'Rostova', 'elena@getexpert.pro', $8, 'EXPERT', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', 'ACTIVE'),
+        ($9, 'Marcus', 'Chen', 'marcus@getexpert.pro', $10, 'EXPERT', 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150', 'ACTIVE'),
+        ($11, 'Chief', 'Admin', 'admin@getexpert.pro', $12, 'ADMIN', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', 'ACTIVE')
+      `, [
+        uSarah, pwdSarah,
+        uJohn, pwdJohn,
+        uAlex, pwdAlex,
+        uElena, pwdElena,
+        uMarcus, pwdMarcus,
+        uAdmin, pwdAdmin
+      ]);
 
       // Seed Services
       await pool.query(`
@@ -200,34 +234,34 @@ async function initDatabase() {
 
       await pool.query(`
         INSERT INTO expert_profiles (id, user_id, title, bio, rating, review_count, earnings, approved, availability, services) VALUES
-        ('ep1', 'e1', 'Lead Software Architect', 'Specializing in building robust, scalable full-stack applications, mobile apps, and custom technical infrastructure integrations for high-growth enterprises.', 4.90, 148, 12500.00, true, $1, '{"s1", "s6"}'),
-        ('ep2', 'e2', 'Senior Marketing Director', 'Expert in data-driven growth strategies, SEO audits, ROI optimizations, and running end-to-end multi-channel marketing campaigns.', 4.85, 94, 7900.00, true, $2, '{"s2", "s3"}'),
-        ('ep3', 'e3', 'Creative Branding Specialist', 'Crafting memorable visual brand identities, logo kits, social media visuals, and comprehensive strategy frameworks.', 4.95, 65, 3200.00, false, $3, '{"s4", "s5"}')
-      `, [availAlex, availElena, availMarcus]);
+        ('ep1', $1, 'Lead Software Architect', 'Specializing in building robust, scalable full-stack applications, mobile apps, and custom technical infrastructure integrations for high-growth enterprises.', 4.90, 148, 12500.00, true, $2, '{"s1", "s6"}'),
+        ('ep2', $3, 'Senior Marketing Director', 'Expert in data-driven growth strategies, SEO audits, ROI optimizations, and running end-to-end multi-channel marketing campaigns.', 4.85, 94, 7900.00, true, $4, '{"s2", "s3"}'),
+        ('ep3', $5, 'Creative Branding Specialist', 'Crafting memorable visual brand identities, logo kits, social media visuals, and comprehensive strategy frameworks.', 4.95, 65, 3200.00, false, $6, '{"s4", "s5"}')
+      `, [uAlex, availAlex, uElena, availElena, uMarcus, availMarcus]);
 
       // Seed Bookings
       await pool.query(`
         INSERT INTO bookings (id, customer_id, customer_name, expert_id, expert_name, service_id, service_title, status, price, scheduled_at, created_at) VALUES
-        ('b1', 'c1', 'Sarah Connor', 'e1', 'Alex Rivera', 's1', 'Dedicated Tech Team Development', 'confirmed', 150.00, CURRENT_TIMESTAMP + INTERVAL '2 days', CURRENT_TIMESTAMP - INTERVAL '6 days'),
-        ('b2', 'c1', 'Sarah Connor', 'e2', 'Elena Rostova', 's2', 'Data-driven Digital Marketing Campaigns', 'completed', 95.00, CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP - INTERVAL '8 days'),
-        ('b3', 'c2', 'John Doe', 'e2', 'Elena Rostova', 's3', 'Social Media & Community Management', 'pending', 75.00, CURRENT_TIMESTAMP + INTERVAL '4 days', CURRENT_TIMESTAMP - INTERVAL '1 day')
-      `);
+        ('b1', $1, 'Sarah Connor', $2, 'Alex Rivera', 's1', 'Dedicated Tech Team Development', 'confirmed', 150.00, CURRENT_TIMESTAMP + INTERVAL '2 days', CURRENT_TIMESTAMP - INTERVAL '6 days'),
+        ('b2', $1, 'Sarah Connor', $3, 'Elena Rostova', 's2', 'Data-driven Digital Marketing Campaigns', 'completed', 95.00, CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP - INTERVAL '8 days'),
+        ('b3', $4, 'John Doe', $3, 'Elena Rostova', 's3', 'Social Media & Community Management', 'pending', 75.00, CURRENT_TIMESTAMP + INTERVAL '4 days', CURRENT_TIMESTAMP - INTERVAL '1 day')
+      `, [uSarah, uAlex, uElena, uJohn]);
 
       // Seed Notifications
       await pool.query(`
         INSERT INTO notifications (id, user_id, title, message, type, read) VALUES
-        ('n1', 'e1', 'New Booking Request', 'Sarah Connor has requested Tech Team Development consulting.', 'info', false),
-        ('n2', 'c1', 'Payment Successful', 'Invoice #INV-2947 has been paid successfully.', 'success', true),
-        ('n3', 'e3', 'Account Verification Pending', 'Please upload your credentials for admin audit checks.', 'warning', false)
-      `);
+        ('n1', $1, 'New Booking Request', 'Sarah Connor has requested Tech Team Development consulting.', 'info', false),
+        ('n2', $2, 'Payment Successful', 'Invoice #INV-2947 has been paid successfully.', 'success', true),
+        ('n3', $3, 'Account Verification Pending', 'Please upload your credentials for admin audit checks.', 'warning', false)
+      `, [uAlex, uSarah, uMarcus]);
 
       // Seed Messages
       await pool.query(`
         INSERT INTO messages (id, conversation_id, sender_id, sender_name, sender_role, content, created_at) VALUES
-        ('m1', 'conv1', 'c1', 'Sarah Connor', 'customer', 'Hello Alex, I would like to clarify if the development scope includes cross-platform build releases.', CURRENT_TIMESTAMP - INTERVAL '1 hour'),
-        ('m2', 'conv1', 'e1', 'Alex Rivera', 'expert', 'Yes Sarah, we construct web and mobile bundles concurrently. App Store submissions are billed under separate support hours.', CURRENT_TIMESTAMP - INTERVAL '45 minutes'),
-        ('m3', 'conv1', 'e1', 'Alex Rivera', 'expert', 'Hi Sarah, I will upload the kickoff documentation in 10 minutes.', CURRENT_TIMESTAMP - INTERVAL '30 minutes')
-      `);
+        ('m1', 'conv1', $1, 'Sarah Connor', 'customer', 'Hello Alex, I would like to clarify if the development scope includes cross-platform build releases.', CURRENT_TIMESTAMP - INTERVAL '1 hour'),
+        ('m2', 'conv1', $2, 'Alex Rivera', 'expert', 'Yes Sarah, we construct web and mobile bundles concurrently. App Store submissions are billed under separate support hours.', CURRENT_TIMESTAMP - INTERVAL '45 minutes'),
+        ('m3', 'conv1', $2, 'Alex Rivera', 'expert', 'Hi Sarah, I will upload the kickoff documentation in 10 minutes.', CURRENT_TIMESTAMP - INTERVAL '30 minutes')
+      `, [uSarah, uAlex]);
 
       console.log('Database seeded successfully.');
     } else {
